@@ -1,4 +1,4 @@
-// Static habits data for HabitFlow demo
+
 const habits = [
   {
     id: 'h1',

@@ -1,4 +1,4 @@
-/* Glassmorphism Button */
+
 .add-habit-btn {
   background: rgba(255, 255, 255, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -15,7 +15,7 @@
   background: rgba(255, 255, 255, 0.4);
 }
 
-/* Modal Overlay */
+
 .habit-modal-overlay {
   position: fixed;
   top: 0;
@@ -29,7 +29,7 @@
   align-items: center;
 }
 
-/* Modal Card */
+
 .habit-modal {
   width: 420px;
   padding: 30px;
