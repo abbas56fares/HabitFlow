@@ -1,0 +1,141 @@
+
+body, html {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+}
+
+.app-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.glass-nav {
+  backdrop-filter: blur(10px);
+  background: rgba(255,255,255,0.05);
+  border-radius: 15px;
+  padding: 0.5rem 1rem;
+}
+
+.navbar-brand, .nav-link {
+  color: #fff !important;
+  font-weight: 600;
+}
+
+.nav-link:hover {
+  color: #ffd700 !important;
+  text-decoration: underline;
+}
+
+footer {
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  border-top: 1px solid rgba(255,255,255,0.2);
+  margin-top: auto;
+  border-radius: 15px 15px 0 0;
+}
+
+.glass-hero {
+  backdrop-filter: blur(15px);
+  background: rgba(255,255,255,0.08);
+  border-radius: 20px;
+  text-align: center;
+  color: #fff;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.glass-hero input {
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: #fff;
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  margin-top: 1rem;
+}
+
+.glass-hero input::placeholder {
+  color: #ddd;
+}
+
+.glass-card {
+  backdrop-filter: blur(10px);
+  background: rgba(255,255,255,0.08);
+  border-radius: 20px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 48px rgba(0,0,0,0.3);
+}
+
+.glass-card .btn-outline-light {
+  border-color: #fff;
+  color: #fff;
+  transition: all 0.3s ease;
+}
+
+.glass-card .btn-outline-light:hover {
+  background: #ffd700;
+  color: #333;
+  border-color: #ffd700;
+}
+
+.background-gradient {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+
+.btn-primary {
+  background: linear-gradient(90deg, #ff758c, #ff7eb3);
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(90deg, #ff7eb3, #ff758c);
+}
+
+
+.alert {
+  backdrop-filter: blur(8px);
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: #fff;
+  border-radius: 10px;
+}
+
+
+input.form-control, textarea.form-control {
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: #fff;
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+}
+
+input.form-control::placeholder, textarea.form-control::placeholder {
+  color: #ddd;
+}
+
+@media (max-width: 768px) {
+  .navbar-collapse {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+  }
+  .navbar-nav {
+    text-align: center;
+  }
+}
