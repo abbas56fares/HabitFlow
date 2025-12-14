@@ -24,7 +24,7 @@ function HabitDetail() {
 
   const fetchHabit = async (userId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/habits/${userId}`);
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/habits/${userId}`);
       const habits = await response.json();
       
       if (response.ok) {
@@ -46,7 +46,7 @@ function HabitDetail() {
     const newStreak = habit.streak + 1;
     
     try {
-      const response = await fetch(`http://localhost:5000/api/habits/${habit.id}`, {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/habits/${habit.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -75,7 +75,7 @@ function HabitDetail() {
     if (!habit || !user) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/habits/${habit.id}`, {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/habits/${habit.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

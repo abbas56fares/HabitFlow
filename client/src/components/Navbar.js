@@ -8,7 +8,7 @@ function Navbar() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is logged in
+    
     const userData = localStorage.getItem("user");
     if (userData) {
       setUser(JSON.parse(userData));

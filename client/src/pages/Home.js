@@ -37,7 +37,7 @@ function Home() {
   
   const fetchHabits = async (userId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/habits/${userId}`);
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/habits/${userId}`);
       const data = await response.json();
       
       if (response.ok) {
@@ -61,7 +61,7 @@ function Home() {
     if (!user) return;
 
     try {
-      const response = await fetch('http://localhost:5000/api/habits', {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/habits`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -95,7 +95,7 @@ function Home() {
     if (!window.confirm('Are you sure you want to delete this habit?')) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/habits/${id}`, {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/habits/${id}`, {
         method: 'DELETE',
       });
 
@@ -125,7 +125,7 @@ function Home() {
     if (!currentHabit || !user) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/habits/${currentHabit.id}`, {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/habits/${currentHabit.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
