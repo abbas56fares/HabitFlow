@@ -16,4 +16,4 @@ connection.connect((err) => {
 });
 
 module.exports = connection;
-
+//  MySQL connection setup
