@@ -22,13 +22,13 @@ app.use('/api/habits', habitRoutes);
 app.use('/api/contact', contactRoutes);
 
 
-app.get('/api/test', async (req, res) => {
-  try {
-    const [rows] = await db.query('SELECT 1 + 1 AS result');
+app.get('/api/test', (req, res) => {
+  db.query('SELECT 1 + 1 AS result', (error, rows) => {
+    if (error) {
+      return res.status(500).json({ error: 'Database connection failed', details: error.message });
+    }
     res.json({ message: 'Database connected successfully', result: rows[0].result });
-  } catch (error) {
-    res.status(500).json({ error: 'Database connection failed', details: error.message });
-  }
+  });
 });
 
 

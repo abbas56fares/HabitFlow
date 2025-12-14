@@ -3,82 +3,85 @@ const router = express.Router();
 const db = require('../config/db');
 
 
-router.get('/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const [habits] = await db.query(
-      'SELECT * FROM habits WHERE user_id = ? ORDER BY created_at DESC',
-      [userId]
-    );
-    res.json(habits);
-  } catch (error) {
-    console.error('Get habits error:', error);
-    res.status(500).json({ error: 'Failed to fetch habits', details: error.message });
-  }
-});
-
-
-router.post('/', async (req, res) => {
-  try {
-    const { userId, title, description, category } = req.body;
-
-    if (!userId || !title) {
-      return res.status(400).json({ error: 'User ID and title are required' });
+router.get('/:userId', (req, res) => {
+  const { userId } = req.params;
+  db.query(
+    'SELECT * FROM habits WHERE user_id = ? ORDER BY created_at DESC',
+    [userId],
+    (err, habits) => {
+      if (err) {
+        console.error('Get habits error:', err);
+        return res.status(500).json({ error: 'Failed to fetch habits', details: err.message });
+      }
+      res.json(habits);
     }
-
-    const [result] = await db.query(
-      'INSERT INTO habits (user_id, title, description, category, streak) VALUES (?, ?, ?, ?, ?)',
-      [userId, title, description || '', category || '', 0]
-    );
-
-    res.status(201).json({
-      message: 'Habit created successfully',
-      habitId: result.insertId
-    });
-  } catch (error) {
-    console.error('Create habit error:', error);
-    res.status(500).json({ error: 'Failed to create habit', details: error.message });
-  }
+  );
 });
 
 
-router.put('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { title, description, category, streak } = req.body;
+router.post('/', (req, res) => {
+  const { userId, title, description, category } = req.body;
 
-    const [result] = await db.query(
-      'UPDATE habits SET title = ?, description = ?, category = ?, streak = ? WHERE id = ?',
-      [title, description, category, streak || 0, id]
-    );
+  if (!userId || !title) {
+    return res.status(400).json({ error: 'User ID and title are required' });
+  }
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Habit not found' });
+  db.query(
+    'INSERT INTO habits (user_id, title, description, category, streak) VALUES (?, ?, ?, ?, ?)',
+    [userId, title, description || '', category || '', 0],
+    (err, result) => {
+      if (err) {
+        console.error('Create habit error:', err);
+        return res.status(500).json({ error: 'Failed to create habit', details: err.message });
+      }
+
+      res.status(201).json({
+        message: 'Habit created successfully',
+        habitId: result.insertId
+      });
     }
-
-    res.json({ message: 'Habit updated successfully' });
-  } catch (error) {
-    console.error('Update habit error:', error);
-    res.status(500).json({ error: 'Failed to update habit', details: error.message });
-  }
+  );
 });
 
 
-router.delete('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
+router.put('/:id', (req, res) => {
+  const { id } = req.params;
+  const { title, description, category, streak } = req.body;
 
-    const [result] = await db.query('DELETE FROM habits WHERE id = ?', [id]);
+  db.query(
+    'UPDATE habits SET title = ?, description = ?, category = ?, streak = ? WHERE id = ?',
+    [title, description, category, streak || 0, id],
+    (err, result) => {
+      if (err) {
+        console.error('Update habit error:', err);
+        return res.status(500).json({ error: 'Failed to update habit', details: err.message });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Habit not found' });
+      }
+
+      res.json({ message: 'Habit updated successfully' });
+    }
+  );
+});
+
+
+router.delete('/:id', (req, res) => {
+  const { id } = req.params;
+
+  db.query('DELETE FROM habits WHERE id = ?', [id], (err, result) => {
+    if (err) {
+      console.error('Delete habit error:', err);
+      return res.status(500).json({ error: 'Failed to delete habit', details: err.message });
+    }
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Habit not found' });
     }
 
     res.json({ message: 'Habit deleted successfully' });
-  } catch (error) {
-    console.error('Delete habit error:', error);
-    res.status(500).json({ error: 'Failed to delete habit', details: error.message });
-  }
+  });
 });
 
 module.exports = router;
