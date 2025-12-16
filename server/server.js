@@ -8,7 +8,13 @@ const app = express();
 
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+// CORS configuration for production
+app.use(cors({
+  origin: '*', // Allow all origins for now
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
