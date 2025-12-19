@@ -5,15 +5,18 @@ const mysql = require("mysql2");
 
 const urlDB = `mysql://${process.env.MYSQLUSER}:${process.env.MYSQLPASSWORD}@${process.env.MYSQLHOST}:${process.env.MYSQLPORT}/${process.env.MYSQLDATABASE}`;
 
-const connection = mysql.createConnection(urlDB);
 
-connection.connect((err) => {
+const pool = mysql.createPool(urlDB);
+
+
+pool.getConnection((err, connection) => {
   if (err) {
-    console.error("MySQL connection failed", err);
+    console.error("MySQL connection pool failed", err);
     return;
   }
-  console.log("MySQL connection established");
+  console.log("MySQL connection pool established");
+  connection.release();
 });
 
-module.exports = connection;
-//  MySQL connection setup
+module.exports = pool;
+
