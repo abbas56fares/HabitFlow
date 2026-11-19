@@ -1,317 +1,365 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+
 import HabitCard from "../components/HabitCard";
-import "../styles/AddHabit.css";
+import Modal from "../components/Modal";
+import { useToast } from "../components/ToastProvider";
+import { createHabit, deleteHabit, getHabits, updateHabit } from "../lib/habitStore";
 
-function Home() {
-  const [search, setSearch] = useState("");
+const EMPTY_FORM = { title: "", description: "", category: "" };
+
+const inputClass =
+  "w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-base text-slate-100 placeholder:text-slate-500 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50";
+
+const labelClass = "mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-400";
+
+const secondaryButtonClass =
+  "min-h-[44px] rounded-lg border border-slate-700 px-5 text-sm font-medium text-slate-300 hover:bg-slate-700/60 hover:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50";
+
+const primaryButtonClass =
+  "min-h-[44px] rounded-lg bg-violet-600 px-5 text-sm font-semibold text-white shadow-lg shadow-violet-600/30 hover:bg-violet-500 active:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500/50";
+
+export default function Home() {
+  const showToast = useToast();
+
   const [habits, setHabits] = useState([]);
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [search, setSearch] = useState("");
 
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-
-  const [newHabit, setNewHabit] = useState({
-    title: "",
-    description: "",
-    category: "",
-  });
-
-  const [currentHabit, setCurrentHabit] = useState(null);
-
+  const [addForm, setAddForm] = useState(EMPTY_FORM);
+  const [editing, setEditing] = useState(null);
+  const [deleting, setDeleting] = useState(null);
+  const [addOpen, setAddOpen] = useState(false);
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (!userData) {
-      navigate('/login');
+    setHabits(getHabits());
+  }, []);
+
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    if (!query) return habits;
+
+    return habits.filter(
+      (habit) =>
+        habit.title.toLowerCase().includes(query) ||
+        habit.category.toLowerCase().includes(query)
+    );
+  }, [habits, search]);
+
+  const longestStreak = habits.reduce((best, habit) => Math.max(best, habit.streak), 0);
+
+  const handleAdd = (event) => {
+    event.preventDefault();
+
+    if (!addForm.title.trim()) {
+      showToast("A habit needs a title.", "error");
       return;
     }
-    
-    const parsedUser = JSON.parse(userData);
-    setUser(parsedUser);
-    fetchHabits(parsedUser.id);
-  }, [navigate]);
 
-  
-  const fetchHabits = async (userId) => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/habits/${userId}`);
-      const data = await response.json();
-      
-      if (response.ok) {
-        setHabits(data);
-      } else {
-        console.error('Failed to fetch habits:', data.error);
-      }
-    } catch (error) {
-      console.error('Error fetching habits:', error);
-    } finally {
-      setLoading(false);
+    if (!createHabit(addForm)) {
+      showToast("Could not save the habit — browser storage is unavailable.", "error");
+      return;
     }
+
+    setHabits(getHabits());
+    setAddForm(EMPTY_FORM);
+    setAddOpen(false);
+    showToast("Habit created.");
   };
 
-  const filtered = habits.filter((h) =>
-    h.title.toLowerCase().includes(search.toLowerCase())
-  );
+  const handleEdit = (event) => {
+    event.preventDefault();
 
-  const handleAddHabit = async () => {
-    if (!newHabit.title.trim()) return alert("Title is required!");
-    if (!user) return;
-
-    try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/habits`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          title: newHabit.title,
-          description: newHabit.description,
-          category: newHabit.category,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        
-        await fetchHabits(user.id);
-        setNewHabit({ title: "", description: "", category: "" });
-        setShowAddModal(false);
-        alert('Habit created successfully!');
-      } else {
-        alert(data.error || 'Failed to create habit');
-      }
-    } catch (error) {
-      console.error('Error creating habit:', error);
-      alert('Connection error. Please make sure the server is running.');
+    if (!editing.title.trim()) {
+      showToast("A habit needs a title.", "error");
+      return;
     }
-  };
 
-  const handleDeleteHabit = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this habit?')) return;
+    const saved = updateHabit(editing.id, {
+      title: editing.title.trim(),
+      description: editing.description.trim(),
+      category: editing.category.trim(),
+    });
 
-    try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/habits/${id}`, {
-        method: 'DELETE',
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        
-        await fetchHabits(user.id);
-        alert('Habit deleted successfully!');
-      } else {
-        alert(data.error || 'Failed to delete habit');
-      }
-    } catch (error) {
-      console.error('Error deleting habit:', error);
-      alert('Connection error. Please make sure the server is running.');
+    if (!saved) {
+      showToast("Could not update the habit.", "error");
+      return;
     }
+
+    setHabits(getHabits());
+    setEditing(null);
+    showToast("Habit updated.");
   };
 
-  
-  const openEditModal = (habit) => {
-    setCurrentHabit(habit);
-    setShowEditModal(true);
-  };
-
-
-  const handleSaveEdit = async () => {
-    if (!currentHabit || !user) return;
-
-    try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/habits/${currentHabit.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: currentHabit.title,
-          description: currentHabit.description,
-          category: currentHabit.category,
-          streak: currentHabit.streak,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-       
-        await fetchHabits(user.id);
-        setShowEditModal(false);
-        alert('Habit updated successfully!');
-      } else {
-        alert(data.error || 'Failed to update habit');
-      }
-    } catch (error) {
-      console.error('Error updating habit:', error);
-      alert('Connection error. Please make sure the server is running.');
+  const handleDelete = () => {
+    if (!deleteHabit(deleting.id)) {
+      showToast("Could not delete the habit.", "error");
+      return;
     }
-  };
 
-  if (loading) {
-    return (
-      <div className="background-gradient py-5 min-vh-100 d-flex align-items-center justify-content-center">
-        <div className="text-white">
-          <h3>Loading habits...</h3>
-        </div>
-      </div>
-    );
-  }
+    setHabits(getHabits());
+    setDeleting(null);
+    showToast("Habit deleted.");
+  };
 
   return (
-    <div className="background-gradient py-5">
-      <div className="container">
-       
-        <header className="glass-hero p-4 mb-4 bg-white">
-          <div className="d-flex justify-content-between align-items-center">
-            <div>
-              <h1 style={{ color: "#764ba2" }}>HabitFlow</h1>
-              <p className="lead text-black">
-                Track your habits, build streaks, visualize progress
-              </p>
-              {user && <p className="text-muted">Welcome, {user.username}!</p>}
-            </div>
-
-            <button
-              className="add-habit-btn"
-              onClick={() => setShowAddModal(true)}
-            >
-              + Add Habit
-            </button>
+    <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+      <header className="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-xl shadow-black/20 sm:p-6 lg:p-8">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-100 md:text-3xl lg:text-4xl">
+              Your habits
+            </h1>
+            <p className="mt-2 max-w-xl text-base leading-relaxed text-slate-400 lg:text-lg">
+              Track what you do daily, build streaks, and watch consistency compound.
+            </p>
           </div>
 
-          <input style={{ border: "grey solid 1px" }}
-            type="text"
-            className="form-control mt-3 text-black"
-            placeholder="Search habits..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </header>
+          <button
+            type="button"
+            onClick={() => setAddOpen(true)}
+            className={`${primaryButtonClass} flex w-full items-center justify-center gap-2 lg:w-auto`}
+          >
+            <i className="fa-solid fa-plus text-xs" aria-hidden="true"></i>
+            Add habit
+          </button>
+        </div>
 
-        
-        <div className="row">
-          {filtered.length === 0 ? (
-            <div className="col-12 text-center text-white mt-4">
-              <h4>{habits.length === 0 ? 'No habits yet. Start by adding your first habit!' : 'No habits match your search.'}</h4>
-            </div>
-          ) : (
-            filtered.map((habit) => (
-              <div className="col-md-4" key={habit.id}>
-                <HabitCard
-                  habit={habit}
-                  onDelete={handleDeleteHabit}
-                  onEdit={openEditModal}
-                />
-              </div>
-            ))
+        <dl className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
+          <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+            <dt className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Habits
+            </dt>
+            <dd className="mt-1 text-2xl font-bold text-slate-100">{habits.length}</dd>
+          </div>
+
+          <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+            <dt className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Longest streak
+            </dt>
+            <dd className="mt-1 text-2xl font-bold text-violet-400">{longestStreak}</dd>
+          </div>
+
+          <div className="col-span-2 rounded-xl border border-slate-800 bg-slate-950 p-4 md:col-span-1">
+            <dt className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Active today
+            </dt>
+            <dd className="mt-1 text-2xl font-bold text-emerald-400">
+              {habits.filter((habit) => habit.streak > 0).length}
+            </dd>
+          </div>
+        </dl>
+
+        <div className="relative mt-5">
+          <i
+            className="fa-solid fa-magnifying-glass pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-500"
+            aria-hidden="true"
+          ></i>
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search by title or category..."
+            aria-label="Search habits"
+            className={`${inputClass} pl-11`}
+          />
+        </div>
+      </header>
+
+      {filtered.length === 0 ? (
+        <div className="mt-6 rounded-2xl border border-dashed border-slate-800 bg-slate-900/50 px-6 py-14 text-center">
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-slate-800 bg-slate-900">
+            <i
+              className={`fa-solid ${
+                habits.length === 0 ? "fa-seedling" : "fa-magnifying-glass"
+              } text-xl text-slate-500`}
+              aria-hidden="true"
+            ></i>
+          </span>
+
+          <h2 className="mt-4 text-xl font-semibold text-slate-200">
+            {habits.length === 0 ? "No habits yet" : "Nothing matches that search"}
+          </h2>
+
+          <p className="mx-auto mt-2 max-w-md text-base text-slate-400">
+            {habits.length === 0
+              ? "Add your first habit and start a streak today."
+              : "Try a different title or category."}
+          </p>
+
+          {habits.length === 0 && (
+            <button
+              type="button"
+              onClick={() => setAddOpen(true)}
+              className={`${primaryButtonClass} mt-6 inline-flex items-center gap-2 px-6`}
+            >
+              <i className="fa-solid fa-plus text-xs" aria-hidden="true"></i>
+              Add habit
+            </button>
           )}
         </div>
-      </div>
-
-      
-      {showAddModal && (
-        <div className="habit-modal-overlay">
-          <div className="habit-modal glass-card">
-            <h3>Add Habit</h3>
-
-            <input
-              className="form-control mb-2"
-              placeholder="Title"
-              value={newHabit.title}
-              onChange={(e) =>
-                setNewHabit({ ...newHabit, title: e.target.value })
-              }
+      ) : (
+        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
+          {filtered.map((habit) => (
+            <HabitCard
+              key={habit.id}
+              habit={habit}
+              onEdit={setEditing}
+              onDelete={setDeleting}
             />
-
-            <textarea
-              className="form-control mb-2"
-              placeholder="Description"
-              value={newHabit.description}
-              onChange={(e) =>
-                setNewHabit({ ...newHabit, description: e.target.value })
-              }
-            />
-
-            <input
-              className="form-control mb-2"
-              placeholder="Category"
-              value={newHabit.category}
-              onChange={(e) =>
-                setNewHabit({ ...newHabit, category: e.target.value })
-              }
-            />
-
-            <div className="d-flex justify-content-end mt-3">
-              <button
-                className="btn btn-secondary me-2"
-                onClick={() => setShowAddModal(false)}
-              >
-                Cancel
-              </button>
-              <button className="btn btn-primary" onClick={handleAddHabit}>
-                Save
-              </button>
-            </div>
-          </div>
+          ))}
         </div>
       )}
 
-      
-      {showEditModal && currentHabit && (
-        <div className="habit-modal-overlay">
-          <div className="habit-modal glass-card">
-            <h3>Edit Habit</h3>
+      {addOpen && (
+        <Modal title="Add habit" onClose={() => setAddOpen(false)}>
+          <form onSubmit={handleAdd} className="flex flex-col gap-4">
+            <div>
+              <label htmlFor="add-title" className={labelClass}>
+                Title
+              </label>
+              <input
+                id="add-title"
+                autoFocus
+                className={inputClass}
+                value={addForm.title}
+                onChange={(event) => setAddForm({ ...addForm, title: event.target.value })}
+                placeholder="Morning run"
+              />
+            </div>
 
-            <input
-              className="form-control mb-2"
-              value={currentHabit.title}
-              onChange={(e) =>
-                setCurrentHabit({ ...currentHabit, title: e.target.value })
-              }
-            />
+            <div>
+              <label htmlFor="add-category" className={labelClass}>
+                Category
+              </label>
+              <input
+                id="add-category"
+                className={inputClass}
+                value={addForm.category}
+                onChange={(event) => setAddForm({ ...addForm, category: event.target.value })}
+                placeholder="Fitness"
+              />
+            </div>
 
-            <textarea
-              className="form-control mb-2"
-              value={currentHabit.description}
-              onChange={(e) =>
-                setCurrentHabit({
-                  ...currentHabit,
-                  description: e.target.value,
-                })
-              }
-            />
+            <div>
+              <label htmlFor="add-description" className={labelClass}>
+                Description
+              </label>
+              <textarea
+                id="add-description"
+                rows="4"
+                className={`${inputClass} resize-y`}
+                value={addForm.description}
+                onChange={(event) =>
+                  setAddForm({ ...addForm, description: event.target.value })
+                }
+                placeholder="What does doing this well look like?"
+              />
+            </div>
 
-            <input
-              className="form-control mb-2"
-              value={currentHabit.category}
-              onChange={(e) =>
-                setCurrentHabit({ ...currentHabit, category: e.target.value })
-              }
-            />
-
-            <div className="d-flex justify-content-end mt-3">
+            <div className="flex flex-col-reverse gap-3 pt-1 sm:flex-row sm:justify-end">
               <button
-                className="btn btn-secondary me-2"
-                onClick={() => setShowEditModal(false)}
+                type="button"
+                onClick={() => setAddOpen(false)}
+                className={secondaryButtonClass}
               >
                 Cancel
               </button>
-              <button className="btn btn-success" onClick={handleSaveEdit}>
-                Update
+              <button type="submit" className={primaryButtonClass}>
+                Save habit
               </button>
             </div>
-          </div>
-        </div>
+          </form>
+        </Modal>
+      )}
+
+      {editing && (
+        <Modal title="Edit habit" onClose={() => setEditing(null)}>
+          <form onSubmit={handleEdit} className="flex flex-col gap-4">
+            <div>
+              <label htmlFor="edit-title" className={labelClass}>
+                Title
+              </label>
+              <input
+                id="edit-title"
+                autoFocus
+                className={inputClass}
+                value={editing.title}
+                onChange={(event) => setEditing({ ...editing, title: event.target.value })}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="edit-category" className={labelClass}>
+                Category
+              </label>
+              <input
+                id="edit-category"
+                className={inputClass}
+                value={editing.category}
+                onChange={(event) => setEditing({ ...editing, category: event.target.value })}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="edit-description" className={labelClass}>
+                Description
+              </label>
+              <textarea
+                id="edit-description"
+                rows="4"
+                className={`${inputClass} resize-y`}
+                value={editing.description}
+                onChange={(event) =>
+                  setEditing({ ...editing, description: event.target.value })
+                }
+              />
+            </div>
+
+            <div className="flex flex-col-reverse gap-3 pt-1 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setEditing(null)}
+                className={secondaryButtonClass}
+              >
+                Cancel
+              </button>
+              <button type="submit" className={primaryButtonClass}>
+                Save changes
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {deleting && (
+        <Modal
+          title="Delete habit"
+          onClose={() => setDeleting(null)}
+          footer={
+            <>
+              <button
+                type="button"
+                onClick={() => setDeleting(null)}
+                className={secondaryButtonClass}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="min-h-[44px] rounded-lg bg-red-600 px-5 text-sm font-semibold text-white shadow-lg shadow-red-600/30 hover:bg-red-500 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500/50"
+              >
+                Delete habit
+              </button>
+            </>
+          }
+        >
+          <p className="text-base leading-relaxed text-slate-300">
+            Delete <span className="font-semibold text-slate-100">{deleting.title}</span> and its
+            streak of {deleting.streak}? This cannot be undone.
+          </p>
+        </Modal>
       )}
     </div>
   );
 }
-
-export default Home;
