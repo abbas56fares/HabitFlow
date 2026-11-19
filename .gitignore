@@ -7,3 +7,7 @@ links.txt
 
 # Document files
 PROJECT_CHANGES_DOCUMENTATION.txt
+
+# macOS metadata
+._*
+.DS_Store
